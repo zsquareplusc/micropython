@@ -1,61 +1,25 @@
-:mod:`esp` --- functions related to the ESP8266
-===============================================
+:mod:`esp` --- functions related to the ESP8266 and ESP32
+=========================================================
 
 .. module:: esp
-    :synopsis: functions related to the ESP8266
+    :synopsis: functions related to the ESP8266 and ESP32
 
-The ``esp`` module contains specific functions related to the ESP8266 module.
+The ``esp`` module contains specific functions related to both the ESP8266 and
+ESP32 modules.  Some functions are only available on one or the other of these
+ports.
 
 
 Functions
 ---------
 
-.. function:: mac([address])
-
-    Get or set the network interface's MAC address.
-
-    If the ``address`` parameter is provided, sets the address to its value. If
-    the function is called wihout parameters, returns the current address.
-
-.. function:: getaddrinfo((hostname, port, lambda))
-
-    Initiate resolving of the given hostname.
-
-    When the hostname is resolved, the provided ``lambda`` callback will be
-    called with two arguments, first being the hostname being resolved,
-    second a tuple with information about that hostname.
-
-.. function:: wifi_mode([mode])
-
-    Get or set the wireless network operating mode.
-
-    If the ``mode`` parameter is provided, sets the mode to its value. If
-    the function is called wihout parameters, returns the current mode.
-
-    The possible modes are defined as constants:
-
-        * ``STA_MODE`` -- station mode,
-        * ``AP_MODE`` -- software access point mode,
-        * ``STA_AP_MODE`` -- mixed station and software access point mode.
-
-.. function:: phy_mode([mode])
-
-    Get or set the network interface mode.
-
-    If the ``mode`` parameter is provided, sets the mode to its value. If
-    the function is called wihout parameters, returns the current mode.
-
-    The possible modes are defined as constants:
-        * ``MODE_11B`` -- IEEE 802.11b,
-        * ``MODE_11G`` -- IEEE 802.11g,
-        * ``MODE_11N`` -- IEEE 802.11n.
-
 .. function:: sleep_type([sleep_type])
+
+    **Note**: ESP8266 only
 
     Get or set the sleep type.
 
-    If the ``sleep_type`` parameter is provided, sets the sleep type to its
-    value. If the function is called wihout parameters, returns the current
+    If the *sleep_type* parameter is provided, sets the sleep type to its
+    value. If the function is called without parameters, returns the current
     sleep type.
 
     The possible sleep types are defined as constants:
@@ -67,7 +31,9 @@ Functions
 
     The system enters the set sleep mode automatically when possible.
 
-.. function:: deepsleep(time=0)
+.. function:: deepsleep(time_us=0, /)
+
+    **Note**: ESP8266 only - use `machine.deepsleep()` on ESP32
 
     Enter deep sleep.
 
@@ -78,12 +44,73 @@ Functions
 
 .. function:: flash_id()
 
+    **Note**: ESP8266 only
+
     Read the device ID of the flash memory.
 
-Classes
--------
+.. function:: flash_size()
 
-.. toctree::
-    :maxdepth: 1
+    Read the total size of the flash memory.
 
-    esp.socket.rst
+.. function:: flash_user_start()
+
+    Read the memory offset at which the user flash space begins.
+
+.. function:: flash_read(byte_offset, length_or_buffer)
+
+.. function:: flash_write(byte_offset, bytes)
+
+.. function:: flash_erase(sector_no)
+
+.. function:: osdebug(level)
+
+    Turn esp os debugging messages on or off.
+
+    The *level* parameter sets the threshold for the log messages for all esp components.
+    The log levels are defined as constants:
+
+        * ``LOG_NONE`` -- No log output
+        * ``LOG_ERROR`` -- Critical errors, software module can not recover on its own
+        * ``LOG_WARN`` -- Error conditions from which recovery measures have been taken
+        * ``LOG_INFO`` -- Information messages which describe normal flow of events
+        * ``LOG_DEBUG`` -- Extra information which is not necessary for normal use (values, pointers, sizes, etc)
+        * ``LOG_VERBOSE`` -- Bigger chunks of debugging information, or frequent messages
+          which can potentially flood the output
+
+.. function:: set_native_code_location(start, length)
+
+    **Note**: ESP8266 only
+
+    Set the location that native code will be placed for execution after it is
+    compiled.  Native code is emitted when the ``@micropython.native``,
+    ``@micropython.viper`` and ``@micropython.asm_xtensa`` decorators are applied
+    to a function.  The ESP8266 must execute code from either iRAM or the lower
+    1MByte of flash (which is memory mapped), and this function controls the
+    location.
+
+    If *start* and *length* are both ``None`` then the native code location is
+    set to the unused portion of memory at the end of the iRAM1 region.  The
+    size of this unused portion depends on the firmware and is typically quite
+    small (around 500 bytes), and is enough to store a few very small
+    functions.  The advantage of using this iRAM1 region is that it does not
+    get worn out by writing to it.
+
+    If neither *start* nor *length* are ``None`` then they should be integers.
+    *start* should specify the byte offset from the beginning of the flash at
+    which native code should be stored.  *length* specifies how many bytes of
+    flash from *start* can be used to store native code.  *start* and *length*
+    should be multiples of the sector size (being 4096 bytes).  The flash will
+    be automatically erased before writing to it so be sure to use a region of
+    flash that is not otherwise used, for example by the firmware or the
+    filesystem.
+
+    When using the flash to store native code *start+length* must be less
+    than or equal to 1MByte.  Note that the flash can be worn out if repeated
+    erasures (and writes) are made so use this feature sparingly.
+    In particular, native code needs to be recompiled and rewritten to flash
+    on each boot (including wake from deepsleep).
+
+    In both cases above, using iRAM1 or flash, if there is no more room left
+    in the specified region then the use of a native decorator on a function
+    will lead to `MemoryError` exception being raised during compilation of
+    that function.

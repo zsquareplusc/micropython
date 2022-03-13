@@ -7,79 +7,76 @@ HEADER_BUILD = $(BUILD)/genhdr
 # file containing qstr defs for the core Python bit
 PY_QSTR_DEFS = $(PY_SRC)/qstrdefs.h
 
+# If qstr autogeneration is not disabled we specify the output header
+# for all collected qstrings.
+ifneq ($(QSTR_AUTOGEN_DISABLE),1)
+QSTR_DEFS_COLLECTED = $(HEADER_BUILD)/qstrdefs.collected.h
+endif
+
+# Any files listed by these variables will cause a full regeneration of qstrs
+# DEPENDENCIES: included in qstr processing; REQUIREMENTS: not included
+QSTR_GLOBAL_DEPENDENCIES += $(PY_SRC)/mpconfig.h mpconfigport.h
+QSTR_GLOBAL_REQUIREMENTS += $(HEADER_BUILD)/mpversion.h
+
 # some code is performance bottleneck and compiled with other optimization options
 CSUPEROPT = -O3
 
-INC += -I../lib/netutils
-
-ifeq ($(MICROPY_PY_USSL),1)
-CFLAGS_MOD += -DMICROPY_PY_USSL=1 -I../lib/axtls/ssl -I../lib/axtls/crypto -I../lib/axtls/config
-LDFLAGS_MOD += -L../lib/axtls/_stage -laxtls
+# Enable building 32-bit code on 64-bit host.
+ifeq ($(MICROPY_FORCE_32BIT),1)
+CC += -m32
+CXX += -m32
+LD += -m32
 endif
 
-#ifeq ($(MICROPY_PY_LWIP),1)
-#CFLAGS_MOD += -DMICROPY_PY_LWIP=1 -I../lib/lwip/src/include -I../lib/lwip/src/include/ipv4 -I../extmod/lwip-include
-#endif
+# External modules written in C.
+ifneq ($(USER_C_MODULES),)
+# pre-define USERMOD variables as expanded so that variables are immediate
+# expanded as they're added to them
+SRC_USERMOD :=
+SRC_USERMOD_CXX :=
+CFLAGS_USERMOD :=
+CXXFLAGS_USERMOD :=
+LDFLAGS_USERMOD :=
+$(foreach module, $(wildcard $(USER_C_MODULES)/*/micropython.mk), \
+    $(eval USERMOD_DIR = $(patsubst %/,%,$(dir $(module))))\
+    $(info Including User C Module from $(USERMOD_DIR))\
+	$(eval include $(module))\
+)
 
-ifeq ($(MICROPY_PY_LWIP),1)
-LWIP_DIR = lib/lwip/src
-INC += -I../lib/lwip/src/include -I../lib/lwip/src/include/ipv4 -I../extmod/lwip-include
-CFLAGS_MOD += -DMICROPY_PY_LWIP=1
-SRC_MOD += extmod/modlwip.c lib/netutils/netutils.c
-SRC_MOD += $(addprefix $(LWIP_DIR)/,\
-	core/def.c \
-	core/dns.c \
-	core/init.c \
-	core/mem.c \
-	core/memp.c \
-	core/netif.c \
-	core/pbuf.c \
-	core/raw.c \
-	core/stats.c \
-	core/sys.c \
-	core/tcp.c \
-	core/tcp_in.c \
-	core/tcp_out.c \
-	core/timers.c \
-	core/udp.c \
-	core/ipv4/autoip.c \
-	core/ipv4/icmp.c \
-	core/ipv4/igmp.c \
-	core/ipv4/inet.c \
-	core/ipv4/inet_chksum.c \
-	core/ipv4/ip_addr.c \
-	core/ipv4/ip.c \
-	core/ipv4/ip_frag.c \
-	)
-ifeq ($(MICROPY_PY_LWIP_SLIP),1)
-CFLAGS_MOD += -DMICROPY_PY_LWIP_SLIP=1
-SRC_MOD += $(LWIP_DIR)/netif/slipif.c
-endif
+SRC_MOD += $(patsubst $(USER_C_MODULES)/%.c,%.c,$(SRC_USERMOD))
+SRC_MOD_CXX += $(patsubst $(USER_C_MODULES)/%.cpp,%.cpp,$(SRC_USERMOD_CXX))
+CFLAGS_MOD += $(CFLAGS_USERMOD)
+CXXFLAGS_MOD += $(CXXFLAGS_USERMOD)
+LDFLAGS_MOD += $(LDFLAGS_USERMOD)
 endif
 
 # py object files
-PY_O_BASENAME = \
+PY_CORE_O_BASENAME = $(addprefix py/,\
 	mpstate.o \
+	nlr.o \
 	nlrx86.o \
 	nlrx64.o \
 	nlrthumb.o \
+	nlraarch64.o \
+	nlrpowerpc.o \
 	nlrxtensa.o \
 	nlrsetjmp.o \
 	malloc.o \
 	gc.o \
+	pystack.o \
 	qstr.o \
 	vstr.o \
 	mpprint.o \
 	unicode.o \
 	mpz.o \
+	reader.o \
 	lexer.o \
-	lexerstr.o \
-	lexerunix.o \
 	parse.o \
 	scope.o \
 	compile.o \
 	emitcommon.o \
 	emitbc.o \
+	asmbase.o \
 	asmx64.o \
 	emitnx64.o \
 	asmx86.o \
@@ -89,15 +86,25 @@ PY_O_BASENAME = \
 	emitinlinethumb.o \
 	asmarm.o \
 	emitnarm.o \
+	asmxtensa.o \
+	emitnxtensa.o \
+	emitinlinextensa.o \
+	emitnxtensawin.o \
 	formatfloat.o \
 	parsenumbase.o \
 	parsenum.o \
 	emitglue.o \
+	persistentcode.o \
 	runtime.o \
+	runtime_utils.o \
+	scheduler.o \
 	nativeglue.o \
+	pairheap.o \
+	ringbuf.o \
 	stackctrl.o \
 	argcheck.o \
 	warning.o \
+	profile.o \
 	map.o \
 	obj.o \
 	objarray.o \
@@ -107,6 +114,7 @@ PY_O_BASENAME = \
 	objcell.o \
 	objclosure.o \
 	objcomplex.o \
+	objdeque.o \
 	objdict.o \
 	objenumerate.o \
 	objexcept.o \
@@ -122,6 +130,7 @@ PY_O_BASENAME = \
 	objmap.o \
 	objmodule.o \
 	objobject.o \
+	objpolyiter.o \
 	objproperty.o \
 	objnone.o \
 	objnamedtuple.o \
@@ -142,6 +151,7 @@ PY_O_BASENAME = \
 	binary.o \
 	builtinimport.o \
 	builtinevex.o \
+	builtinhelp.o \
 	modarray.o \
 	modbuiltins.o \
 	modcollections.o \
@@ -152,24 +162,75 @@ PY_O_BASENAME = \
 	modmicropython.o \
 	modstruct.o \
 	modsys.o \
+	moduerrno.o \
+	modthread.o \
 	vm.o \
 	bc.o \
 	showbc.o \
 	repl.o \
 	smallint.o \
 	frozenmod.o \
-	../extmod/moductypes.o \
-	../extmod/modujson.o \
-	../extmod/modure.o \
-	../extmod/moduzlib.o \
-	../extmod/moduheapq.o \
-	../extmod/moduhashlib.o \
-	../extmod/modubinascii.o \
-	../extmod/modmachine.o \
-	../extmod/modussl.o \
+	)
+
+PY_EXTMOD_O_BASENAME = \
+	extmod/moduasyncio.o \
+	extmod/moductypes.o \
+	extmod/modujson.o \
+	extmod/moduos.o \
+	extmod/modure.o \
+	extmod/moduzlib.o \
+	extmod/moduheapq.o \
+	extmod/modutimeq.o \
+	extmod/moduhashlib.o \
+	extmod/moducryptolib.o \
+	extmod/modubinascii.o \
+	extmod/virtpin.o \
+	extmod/machine_bitstream.o \
+	extmod/machine_mem.o \
+	extmod/machine_pinbase.o \
+	extmod/machine_signal.o \
+	extmod/machine_pulse.o \
+	extmod/machine_pwm.o \
+	extmod/machine_i2c.o \
+	extmod/machine_spi.o \
+	extmod/modbluetooth.o \
+	extmod/modussl_axtls.o \
+	extmod/modussl_mbedtls.o \
+	extmod/moduplatform.o\
+	extmod/modurandom.o \
+	extmod/moduselect.o \
+	extmod/moduwebsocket.o \
+	extmod/modwebrepl.o \
+	extmod/modframebuf.o \
+	extmod/vfs.o \
+	extmod/vfs_blockdev.o \
+	extmod/vfs_reader.o \
+	extmod/vfs_posix.o \
+	extmod/vfs_posix_file.o \
+	extmod/vfs_fat.o \
+	extmod/vfs_fat_diskio.o \
+	extmod/vfs_fat_file.o \
+	extmod/vfs_lfs.o \
+	extmod/utime_mphal.o \
+	extmod/uos_dupterm.o \
+	shared/libc/abort_.o \
+	shared/libc/printf.o \
 
 # prepend the build destination prefix to the py object files
-PY_O = $(addprefix $(PY_BUILD)/, $(PY_O_BASENAME))
+PY_CORE_O = $(addprefix $(BUILD)/, $(PY_CORE_O_BASENAME))
+PY_EXTMOD_O = $(addprefix $(BUILD)/, $(PY_EXTMOD_O_BASENAME))
+
+# this is a convenience variable for ports that want core, extmod and frozen code
+PY_O = $(PY_CORE_O) $(PY_EXTMOD_O)
+
+# object file for frozen code specified via a manifest
+ifneq ($(FROZEN_MANIFEST),)
+PY_O += $(BUILD)/$(BUILD)/frozen_content.o
+endif
+
+# Sources that may contain qstrings
+SRC_QSTR_IGNORE = py/nlr%
+SRC_QSTR += $(SRC_MOD) $(filter-out $(SRC_QSTR_IGNORE),$(PY_CORE_O_BASENAME:.o=.c)) $(PY_EXTMOD_O_BASENAME:.o=.c)
 
 # Anything that depends on FORCE will be considered out-of-date
 FORCE:
@@ -183,33 +244,33 @@ $(HEADER_BUILD)/mpversion.h: FORCE | $(HEADER_BUILD)
 MPCONFIGPORT_MK = $(wildcard mpconfigport.mk)
 
 # qstr data
-
 # Adding an order only dependency on $(HEADER_BUILD) causes $(HEADER_BUILD) to get
 # created before we run the script to generate the .h
 # Note: we need to protect the qstr names from the preprocessor, so we wrap
 # the lines in "" and then unwrap after the preprocessor is finished.
-$(HEADER_BUILD)/qstrdefs.generated.h: $(PY_QSTR_DEFS) $(QSTR_DEFS) $(PY_SRC)/makeqstrdata.py mpconfigport.h $(MPCONFIGPORT_MK) $(PY_SRC)/mpconfig.h | $(HEADER_BUILD)
+# See more information about this process in docs/develop/qstr.rst.
+$(HEADER_BUILD)/qstrdefs.generated.h: $(PY_QSTR_DEFS) $(QSTR_DEFS) $(QSTR_DEFS_COLLECTED) $(PY_SRC)/makeqstrdata.py mpconfigport.h $(MPCONFIGPORT_MK) $(PY_SRC)/mpconfig.h | $(HEADER_BUILD)
 	$(ECHO) "GEN $@"
-	$(Q)cat $(PY_QSTR_DEFS) $(QSTR_DEFS) | $(SED) 's/^Q(.*)/"&"/' | $(CPP) $(CFLAGS) - | sed 's/^"\(Q(.*)\)"/\1/' > $(HEADER_BUILD)/qstrdefs.preprocessed.h
+	$(Q)$(CAT) $(PY_QSTR_DEFS) $(QSTR_DEFS) $(QSTR_DEFS_COLLECTED) | $(SED) 's/^Q(.*)/"&"/' | $(CPP) $(CFLAGS) - | $(SED) 's/^\"\(Q(.*)\)\"/\1/' > $(HEADER_BUILD)/qstrdefs.preprocessed.h
 	$(Q)$(PYTHON) $(PY_SRC)/makeqstrdata.py $(HEADER_BUILD)/qstrdefs.preprocessed.h > $@
 
-# emitters
+$(HEADER_BUILD)/compressed.data.h: $(HEADER_BUILD)/compressed.collected
+	$(ECHO) "GEN $@"
+	$(Q)$(PYTHON) $(PY_SRC)/makecompresseddata.py $< > $@
 
-$(PY_BUILD)/emitnx64.o: CFLAGS += -DN_X64
-$(PY_BUILD)/emitnx64.o: py/emitnative.c
-	$(call compile_c)
+# build a list of registered modules for py/objmodule.c.
+$(HEADER_BUILD)/moduledefs.h: $(SRC_QSTR) $(QSTR_GLOBAL_DEPENDENCIES) | $(HEADER_BUILD)/mpversion.h
+	@$(ECHO) "GEN $@"
+	$(Q)$(PYTHON) $(PY_SRC)/makemoduledefs.py --vpath="., $(TOP), $(USER_C_MODULES)" $(SRC_QSTR) > $@
 
-$(PY_BUILD)/emitnx86.o: CFLAGS += -DN_X86
-$(PY_BUILD)/emitnx86.o: py/emitnative.c
-	$(call compile_c)
+# Standard C functions like memset need to be compiled with special flags so
+# the compiler does not optimise these functions in terms of themselves.
+CFLAGS_BUILTIN ?= -ffreestanding -fno-builtin -fno-lto
+$(BUILD)/shared/libc/string0.o: CFLAGS += $(CFLAGS_BUILTIN)
 
-$(PY_BUILD)/emitnthumb.o: CFLAGS += -DN_THUMB
-$(PY_BUILD)/emitnthumb.o: py/emitnative.c
-	$(call compile_c)
-
-$(PY_BUILD)/emitnarm.o: CFLAGS += -DN_ARM
-$(PY_BUILD)/emitnarm.o: py/emitnative.c
-	$(call compile_c)
+# Force nlr code to always be compiled with space-saving optimisation so
+# that the function preludes are of a minimal and predictable form.
+$(PY_BUILD)/nlr%.o: CFLAGS += -Os
 
 # optimising gc for speed; 5ms down to 4ms on pybv2
 $(PY_BUILD)/gc.o: CFLAGS += $(CSUPEROPT)
@@ -220,7 +281,10 @@ $(PY_BUILD)/vm.o: CFLAGS += $(CSUPEROPT)
 # may require disabling tail jump optimization. This will make sure that
 # each opcode has its own dispatching jump which will improve branch
 # branch predictor efficiency.
-# http://article.gmane.org/gmane.comp.lang.lua.general/75426
+# https://marc.info/?l=lua-l&m=129778596120851
 # http://hg.python.org/cpython/file/b127046831e2/Python/ceval.c#l828
 # http://www.emulators.com/docs/nx25_nostradamus.htm
 #-fno-crossjumping
+
+# Include rules for extmod related code
+include $(TOP)/extmod/extmod.mk

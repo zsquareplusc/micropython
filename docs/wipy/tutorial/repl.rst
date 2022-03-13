@@ -6,9 +6,11 @@ interactive MicroPython prompt that you can access on the WiPy.  Using
 the REPL is by far the easiest way to test out your code and run commands.
 You can use the REPL in addition to writing scripts in ``main.py``.
 
+.. _wipy_uart:
+
 To use the REPL, you must connect to the WiPy either via :ref:`telnet <wipy_telnet>`,
-or with a USB to serial converter wired to the one the two UARTs on the
-WiPy. To enable REPL duplication on UART0 (the one accesible via the expansion board)
+or with a USB to serial converter wired to one of the two UARTs on the
+WiPy. To enable REPL duplication on UART0 (the one accessible via the expansion board)
 do::
 
    >>> from machine import UART
@@ -16,7 +18,7 @@ do::
    >>> uart = UART(0, 115200)
    >>> os.dupterm(uart)
 
-Place this piece of code inside your `boot.py` so that it's done automatically after
+Place this piece of code inside your ``boot.py`` so that it's done automatically after
 reset.
 
 Windows
@@ -49,8 +51,13 @@ Open a terminal and run::
 or::
 
     $ screen /dev/tty.usbmodem* 115200
-    
-When you are finished and want to exit screen, type CTRL-A CTRL-\\.
+
+When you are finished and want to exit ``screen``, type CTRL-A CTRL-\\. If your keyboard does not have a \\-key (i.e. you need an obscure combination for \\ like ALT-SHIFT-7) you can remap the ``quit`` command:
+
+- create ``~/.screenrc``
+- add ``bind q quit``
+
+This will allow you to quit ``screen`` by hitting CTRL-A Q.
 
 Linux
 -----
@@ -113,7 +120,7 @@ If something goes wrong, you can reset the board in two ways. The first is to pr
 at the MicroPython prompt, which performs a soft reset.  You will see a message something like::
 
     >>> 
-    PYB: soft reboot
+    MPY: soft reboot
     MicroPython v1.4.6-146-g1d8b5e5 on 2015-10-21; WiPy with CC3200
     Type "help()" for more information.
     >>>

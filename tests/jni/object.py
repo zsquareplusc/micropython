@@ -1,10 +1,10 @@
-import sys
 import jni
+
 try:
     Integer = jni.cls("java/lang/Integer")
 except:
     print("SKIP")
-    sys.exit()
+    raise SystemExit
 
 # Create object
 i = Integer(42)

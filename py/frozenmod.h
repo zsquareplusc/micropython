@@ -1,9 +1,10 @@
 /*
- * This file is part of the Micro Python project, http://micropython.org/
+ * This file is part of the MicroPython project, http://micropython.org/
  *
  * The MIT License (MIT)
  *
- * Copyright (c) 2014 Damien P. George
+ * Copyright (c) 2015 Paul Sokolovsky
+ * Copyright (c) 2016 Damien P. George
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -23,5 +24,17 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+#ifndef MICROPY_INCLUDED_PY_FROZENMOD_H
+#define MICROPY_INCLUDED_PY_FROZENMOD_H
 
-mp_lexer_t *mp_find_frozen_module(const char *str, int len);
+#include "py/lexer.h"
+
+enum {
+    MP_FROZEN_NONE,
+    MP_FROZEN_STR,
+    MP_FROZEN_MPY,
+};
+
+mp_import_stat_t mp_find_frozen_module(const char *str, int *frozen_type, void **data);
+
+#endif // MICROPY_INCLUDED_PY_FROZENMOD_H

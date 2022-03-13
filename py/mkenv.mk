@@ -20,6 +20,7 @@ ifeq ("$(origin V)", "command line")
 BUILD_VERBOSE=$(V)
 endif
 ifndef BUILD_VERBOSE
+$(info Use make V=1 or set BUILD_VERBOSE in your environment to increase build verbosity.)
 BUILD_VERBOSE = 0
 endif
 ifeq ($(BUILD_VERBOSE),0)
@@ -27,12 +28,8 @@ Q = @
 else
 Q =
 endif
-# Since this is a new feature, advertise it
-ifeq ($(BUILD_VERBOSE),0)
-$(info Use make V=1 or set BUILD_VERBOSE in your environment to increase build verbosity.)
-endif
 
-# default settings; can be overriden in main Makefile
+# default settings; can be overridden in main Makefile
 
 PY_SRC ?= $(TOP)/py
 BUILD ?= build
@@ -42,20 +39,29 @@ ECHO = @echo
 CP = cp
 MKDIR = mkdir
 SED = sed
-PYTHON = python
+CAT = cat
+TOUCH = touch
+PYTHON = python3
 
 AS = $(CROSS_COMPILE)as
 CC = $(CROSS_COMPILE)gcc
 CXX = $(CROSS_COMPILE)g++
+GDB = $(CROSS_COMPILE)gdb
 LD = $(CROSS_COMPILE)ld
 OBJCOPY = $(CROSS_COMPILE)objcopy
 SIZE = $(CROSS_COMPILE)size
 STRIP = $(CROSS_COMPILE)strip
 AR = $(CROSS_COMPILE)ar
-ifeq ($(MICROPY_FORCE_32BIT),1)
-CC += -m32
-CXX += -m32
-LD += -m32
+
+MAKE_MANIFEST = $(PYTHON) $(TOP)/tools/makemanifest.py
+MAKE_FROZEN = $(PYTHON) $(TOP)/tools/make-frozen.py
+MPY_TOOL = $(PYTHON) $(TOP)/tools/mpy-tool.py
+
+MPY_LIB_DIR = $(TOP)/../micropython-lib
+
+ifeq ($(MICROPY_MPYCROSS),)
+MICROPY_MPYCROSS = $(TOP)/mpy-cross/mpy-cross
+MICROPY_MPYCROSS_DEPENDENCY = $(MICROPY_MPYCROSS)
 endif
 
 all:

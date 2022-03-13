@@ -1,10 +1,10 @@
-.. _wipy_tutorial_index:
+.. _wipy_tutorial:
 
 WiPy tutorials and examples
 ===========================
 
 Before starting, make sure that you are running the latest firmware,
-for instrucctions see :ref:`OTA How-To <wipy_firmware_upgrade>`.
+for instructions see :ref:`OTA How-To <wipy_firmware_upgrade>`.
 
 .. toctree::
    :maxdepth: 1
@@ -14,4 +14,5 @@ for instrucctions see :ref:`OTA How-To <wipy_firmware_upgrade>`.
    repl.rst
    blynk.rst
    wlan.rst
+   timer.rst
    reset.rst

@@ -27,7 +27,33 @@ print(bytearray([1]) == b"1")
 print(b"1" == bytearray([1]))
 print(bytearray() == bytearray())
 
+b1 = bytearray([1, 2, 3])
+b2 = bytearray([1, 2, 3])
+b3 = bytearray([1, 3])
+print(b1 == b2)
+print(b2 != b3)
+print(b1 <= b2)
+print(b1 <= b3)
+print(b1 < b3)
+print(b1 >= b2)
+print(b3 >= b2)
+print(b3 > b2)
+print(b1 != b2)
+print(b2 == b3)
+print(b1 > b2)
+print(b1 > b3)
+print(b1 >= b3)
+print(b1 < b2)
+print(b3 < b2)
+print(b3 <= b2)
+
 # comparison with other type should return False
 print(bytearray() == 1)
 
 # TODO: other comparisons
+
+# __contains__
+b = bytearray(b"\0foo\0")
+print(b"foo" in b)
+print(b"foo\x01" in b)
+print(b"" in b)

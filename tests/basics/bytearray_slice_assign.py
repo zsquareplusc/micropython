@@ -2,10 +2,9 @@ try:
     bytearray()[:] = bytearray()
 except TypeError:
     print("SKIP")
-    import sys
-    sys.exit()
+    raise SystemExit
 
-# test slices; only 2 argument version supported by Micro Python at the moment
+# test slices; only 2 argument version supported by MicroPython at the moment
 x = bytearray(range(10))
 
 # Assignment
@@ -47,8 +46,23 @@ b = bytearray(2)
 b[2:] = bytearray(10)
 print(b)
 
+b = bytearray(10)
+b[:-1] = bytearray(500)
+print(len(b), b[0], b[-1])
+
+# extension with self on RHS
+b = bytearray(x)
+b[4:] = b
+print(b)
 
 # Assignment of bytes to array slice
 b = bytearray(2)
 b[1:1] = b"12345"
 print(b)
+
+# Growth of bytearray via slice extension
+b = bytearray(b'12345678')
+b.append(57) # expand and add a bit of unused space at end of the bytearray
+for i in range(400):
+    b[-1:] = b'ab' # grow slowly into the unused space
+print(len(b), b)

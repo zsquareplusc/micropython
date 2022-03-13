@@ -1,5 +1,7 @@
-The Switch, callbacks and interrupts
-====================================
+.. _pyboard_tutorial_switch:
+
+Switches, callbacks and interrupts
+==================================
 
 The pyboard has 2 small switches, labelled USR and RST.  The RST switch
 is a hard-reset switch, and if you press it then it restarts the pyboard
@@ -15,11 +17,17 @@ the name ``pyb`` does not exist.
 
 With the switch object you can get its status::
 
-    >>> sw()
+    >>> sw.value()
     False
 
 This will print ``False`` if the switch is not held, or ``True`` if it is held.
 Try holding the USR switch down while running the above command.
+
+There is also a shorthand notation to get the switch status, by "calling" the
+switch object::
+
+    >>> sw()
+    False
 
 Switch callbacks
 ----------------
@@ -85,7 +93,7 @@ on the pin for any changes, and the following will occur:
    running Python script.
 3. The microcontroller starts executing the special interrupt handler
    associated with the switch's external trigger.  This interrupt handler
-   get the function that you registered with ``sw.callback()`` and executes
+   gets the function that you registered with ``sw.callback()`` and executes
    it.
 4. Your callback function is executed until it finishes, returning control
    to the switch interrupt handler.
@@ -99,3 +107,9 @@ The above sequence of events gets a bit more complicated when multiple
 interrupts occur at the same time.  In that case, the interrupt with the
 highest priority goes first, then the others in order of their priority.
 The switch interrupt is set at the lowest priority.
+
+Further reading
+---------------
+
+For further information about using hardware interrupts see
+:ref:`writing interrupt handlers <isr_rules>`.
